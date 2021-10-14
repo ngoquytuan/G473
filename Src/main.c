@@ -25,6 +25,8 @@
 #include "stdio.h"
 #include "wizchip_conf.h"
 #include "irigb.h"
+#include "lcd.h"
+#include "delay.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,7 +65,7 @@ uint32_t Wave_LUT[NS] = {
 DAC_HandleTypeDef hdac1;
 DMA_HandleTypeDef hdma_dac1_ch1;
 
-I2C_HandleTypeDef hi2c3;
+I2C_HandleTypeDef hi2c2;
 
 SPI_HandleTypeDef hspi1;
 
@@ -78,7 +80,7 @@ UART_HandleTypeDef huart3;
 
 
 wiz_NetInfo gWIZNETINFO = { .mac = {0x00, 0x08, 0xDC,0x4F, 0xEB, 0x6E},
-                            .ip = {192, 168, 22, 165},
+                            .ip = {192, 168, 22, 163},
                             .sn = {255,255,255,1},
                             .gw = {192, 168, 22, 252},
                             .dns = {8,8,8,8},
@@ -90,13 +92,13 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_DAC1_Init(void);
-static void MX_I2C3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
 static void  wizchip_select(void)
 {
@@ -278,22 +280,30 @@ uint8_t u2data[100];
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_DAC1_Init();
-  MX_I2C3_Init();
   MX_SPI1_Init();
   MX_TIM1_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_TIM2_Init();
+  MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
+	LCD_Init();
+	LCD_Clear();
+	LCD_Gotoxy(0,0);
+	LCD_Puts("Nguon ok! Dong ho Ok!");
+	LCD_Gotoxy(1,0);
+	LCD_Puts("GPS: ok.");
+	lcdprintf("IP: %s","192.168.22.153");
 	HAL_GPIO_WritePin(GPIOA, LED_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(RD485_GPIO_Port, RD485_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
+	//115200 7b 1s n
 	printf("This code gen by STMcube STM32G473RBT 72MHz\r\n");
 	//HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 100);
 	HAL_UART_Transmit(&huart2, (uint8_t *)"UART2 TX ok\r\n", 13, 100);
 	
-	//w5500_lib_init();
+	w5500_lib_init();
 	HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)_Bit0, 1280, DAC_ALIGN_12B_R);
 	//hdma_dac1_ch1.Instance->CMAR = (uint32_t)_Bit0;
@@ -301,6 +311,9 @@ uint8_t u2data[100];
 	//HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 	//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R,4000);
 	printf("Run\r\n");
+	
+	
+			
 	HAL_GPIO_WritePin(RD485_GPIO_Port, RD485_Pin, GPIO_PIN_RESET);
 	//MX_IWDG_Init();
   /* USER CODE END 2 */
@@ -313,10 +326,10 @@ uint8_t u2data[100];
 		//HAL_UART_Receive(&huart2, u2data,20,100);
 		//printf("u2data:%s\r\n",u2data);
 		//HAL_Delay(100);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 0);
 		//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R,4000);
     HAL_Delay(100);
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 1);
 		//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R,400);
     HAL_Delay(50);
 		//printf("done:%d\r\n",_loop1);
@@ -373,11 +386,11 @@ void SystemClock_Config(void)
   /** Initializes the peripherals clocks
   */
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_USART2
-                              |RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_I2C3;
+                              |RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_I2C2;
   PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
   PeriphClkInit.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
-  PeriphClkInit.I2c3ClockSelection = RCC_I2C3CLKSOURCE_PCLK1;
+  PeriphClkInit.I2c2ClockSelection = RCC_I2C2CLKSOURCE_PCLK1;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
@@ -430,48 +443,48 @@ static void MX_DAC1_Init(void)
 }
 
 /**
-  * @brief I2C3 Initialization Function
+  * @brief I2C2 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_I2C3_Init(void)
+static void MX_I2C2_Init(void)
 {
 
-  /* USER CODE BEGIN I2C3_Init 0 */
+  /* USER CODE BEGIN I2C2_Init 0 */
 
-  /* USER CODE END I2C3_Init 0 */
+  /* USER CODE END I2C2_Init 0 */
 
-  /* USER CODE BEGIN I2C3_Init 1 */
+  /* USER CODE BEGIN I2C2_Init 1 */
 
-  /* USER CODE END I2C3_Init 1 */
-  hi2c3.Instance = I2C3;
-  hi2c3.Init.Timing = 0x10909CEC;
-  hi2c3.Init.OwnAddress1 = 0;
-  hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c3.Init.OwnAddress2 = 0;
-  hi2c3.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-  hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c3) != HAL_OK)
+  /* USER CODE END I2C2_Init 1 */
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.Timing = 0x10909CEC;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
   {
     Error_Handler();
   }
   /** Configure Analogue filter
   */
-  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
     Error_Handler();
   }
   /** Configure Digital filter
   */
-  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0) != HAL_OK)
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN I2C3_Init 2 */
+  /* USER CODE BEGIN I2C2_Init 2 */
 
-  /* USER CODE END I2C3_Init 2 */
+  /* USER CODE END I2C2_Init 2 */
 
 }
 
@@ -828,7 +841,11 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, LED_Pin|RD485_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, SCSn_Pin|RSTn_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, SCSn_Pin|RSTn_Pin|LCD_D4_Pin|LCD_D5_Pin
+                          |LCD_D6_Pin|LCD_D7_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, LCD_RS_Pin|LCD_EN_Pin|LCD_RW_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : LED_Pin RD485_Pin */
   GPIO_InitStruct.Pin = LED_Pin|RD485_Pin;
@@ -837,8 +854,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SCSn_Pin RSTn_Pin */
-  GPIO_InitStruct.Pin = SCSn_Pin|RSTn_Pin;
+  /*Configure GPIO pins : SCSn_Pin RSTn_Pin LCD_D4_Pin LCD_D5_Pin
+                           LCD_D6_Pin LCD_D7_Pin */
+  GPIO_InitStruct.Pin = SCSn_Pin|RSTn_Pin|LCD_D4_Pin|LCD_D5_Pin
+                          |LCD_D6_Pin|LCD_D7_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -855,6 +874,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(FR_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LCD_RS_Pin LCD_EN_Pin LCD_RW_Pin */
+  GPIO_InitStruct.Pin = LCD_RS_Pin|LCD_EN_Pin|LCD_RW_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);

@@ -7,8 +7,8 @@ HeaderPath=..\Drivers\STM32G4xx_HAL_Driver\Inc;..\Drivers\STM32G4xx_HAL_Driver\I
 CDefines=USE_HAL_DRIVER;STM32G473xx;USE_HAL_DRIVER;USE_HAL_DRIVER;
 
 [PreviousGenFiles]
-HeaderPath=C:/Users/ngoqu/Documents/abc/G4x3/Inc
+HeaderPath=C:/Users/ngoqu/Documents/GitHub/G473/Inc
 HeaderFiles=stm32g4xx_it.h;stm32g4xx_hal_conf.h;main.h;
-SourcePath=C:/Users/ngoqu/Documents/abc/G4x3/Src
+SourcePath=C:/Users/ngoqu/Documents/GitHub/G473/Src
 SourceFiles=stm32g4xx_it.c;stm32g4xx_hal_msp.c;main.c;
 
