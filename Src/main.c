@@ -59,13 +59,14 @@ uint32_t Wave_LUT[NS] = {
 uint32_t Wave_LUT[NS] = {
     4091, 4091, 4091, 4091, 4091, 4091, 4091, 4091,4095,4095 
 };*/
+
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 DAC_HandleTypeDef hdac1;
 DMA_HandleTypeDef hdma_dac1_ch1;
 
-I2C_HandleTypeDef hi2c2;
+I2C_HandleTypeDef hi2c3;
 
 SPI_HandleTypeDef hspi1;
 
@@ -98,7 +99,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM2_Init(void);
-static void MX_I2C2_Init(void);
+static void MX_I2C3_Init(void);
 /* USER CODE BEGIN PFP */
 static void  wizchip_select(void)
 {
@@ -242,6 +243,37 @@ void w5500_lib_init(void){
 		
 
 }
+
+//----------------------Phan giao tiep i2c-thoi gian thuc ---------------------//
+unsigned char i2c_write[1];
+char time[7],giaycu,ngay_al,thang_al,nhietdo,nhietdole;
+unsigned char i2c_rv[19];
+void BCD_Decoder()
+{
+	//printf("i2c_rv[3]: %d",i2c_rv[3]);
+	for(char x=0;x<7;x++) time[x]=(i2c_rv[x] & 0x0f) + (i2c_rv[x]>>4)*10;
+	//time[3] --; 
+}
+unsigned char BCD_Encoder(unsigned char temp)
+{
+	return ((temp/10)<<4)|(temp%10);
+}
+void laythoigian()
+{
+	HAL_I2C_Mem_Read(&hi2c3,0x68<<1,0,I2C_MEMADD_SIZE_8BIT,i2c_rv,19,1000); //read time
+	BCD_Decoder(); //chuyen doi
+	nhietdo = i2c_rv[17];
+	nhietdole = i2c_rv[18]>>6;
+	if(nhietdole == 1) nhietdole = 25;
+	else if(nhietdole == 2) nhietdole = 5;
+	else if(nhietdole == 3) nhietdole = 75;
+	else nhietdole = 0;
+}
+void ghids(unsigned char add, unsigned char dat)
+{
+	i2c_write[0] = BCD_Encoder(dat);
+	HAL_I2C_Mem_Write(&hi2c3,0x68<<1,add,I2C_MEMADD_SIZE_8BIT,i2c_write,1,1000); 
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -286,8 +318,18 @@ uint8_t u2data[100];
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_TIM2_Init();
-  MX_I2C2_Init();
+  MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
+	/*
+	laythoigian();
+	ghids(0,0);
+	ghids(1,41);
+	ghids(2,10);
+	ghids(3,6);
+	ghids(4,15);
+	ghids(5,10);
+	ghids(6,21);*/
+	
 	LCD_Init();
 	LCD_Clear();
 	LCD_Gotoxy(0,0);
@@ -328,10 +370,16 @@ uint8_t u2data[100];
 		//HAL_Delay(100);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 0);
 		//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R,4000);
-    HAL_Delay(100);
+    HAL_Delay(500);
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 1);
 		//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R,400);
-    HAL_Delay(50);
+    HAL_Delay(450);
+		laythoigian();
+		
+		//printf("Time :%d %d %d %d %d %d %d, %d,%d\r\n",time[0],time[1],time[2],time[3],time[4],time[5],time[6],nhietdo,nhietdole);
+		LCD_Gotoxy(0,0);
+		if(time[3] == 6) LCD_Puts("Fri ");
+		lcdprintf("%2d/%2d/20%2d %2d:%2d:%2d",time[4],time[5],time[6],time[2],time[1],time[0]);
 		//printf("done:%d\r\n",_loop1);
     /* USER CODE END WHILE */
 
@@ -386,11 +434,11 @@ void SystemClock_Config(void)
   /** Initializes the peripherals clocks
   */
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_USART2
-                              |RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_I2C2;
+                              |RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_I2C3;
   PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
   PeriphClkInit.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
-  PeriphClkInit.I2c2ClockSelection = RCC_I2C2CLKSOURCE_PCLK1;
+  PeriphClkInit.I2c3ClockSelection = RCC_I2C3CLKSOURCE_PCLK1;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
@@ -443,48 +491,48 @@ static void MX_DAC1_Init(void)
 }
 
 /**
-  * @brief I2C2 Initialization Function
+  * @brief I2C3 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_I2C2_Init(void)
+static void MX_I2C3_Init(void)
 {
 
-  /* USER CODE BEGIN I2C2_Init 0 */
+  /* USER CODE BEGIN I2C3_Init 0 */
 
-  /* USER CODE END I2C2_Init 0 */
+  /* USER CODE END I2C3_Init 0 */
 
-  /* USER CODE BEGIN I2C2_Init 1 */
+  /* USER CODE BEGIN I2C3_Init 1 */
 
-  /* USER CODE END I2C2_Init 1 */
-  hi2c2.Instance = I2C2;
-  hi2c2.Init.Timing = 0x10909CEC;
-  hi2c2.Init.OwnAddress1 = 0;
-  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c2.Init.OwnAddress2 = 0;
-  hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  /* USER CODE END I2C3_Init 1 */
+  hi2c3.Instance = I2C3;
+  hi2c3.Init.Timing = 0x10909CEC;
+  hi2c3.Init.OwnAddress1 = 0;
+  hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c3.Init.OwnAddress2 = 0;
+  hi2c3.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c3) != HAL_OK)
   {
     Error_Handler();
   }
   /** Configure Analogue filter
   */
-  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
     Error_Handler();
   }
   /** Configure Digital filter
   */
-  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0) != HAL_OK)
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN I2C2_Init 2 */
+  /* USER CODE BEGIN I2C3_Init 2 */
 
-  /* USER CODE END I2C2_Init 2 */
+  /* USER CODE END I2C3_Init 2 */
 
 }
 
