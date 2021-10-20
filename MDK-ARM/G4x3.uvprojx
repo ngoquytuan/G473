@@ -428,6 +428,11 @@
               <FileType>1</FileType>
               <FilePath>../Src/stm32g4xx_hal_msp.c</FilePath>
             </File>
+            <File>
+              <FileName>ds3231.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\user\ds3231\ds3231.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
