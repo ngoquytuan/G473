@@ -89,6 +89,8 @@ void Error_Handler(void);
 #define LCD_D7_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 #define WZN_ERR -1
+
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
