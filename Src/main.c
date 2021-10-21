@@ -26,7 +26,8 @@
 #include "wizchip_conf.h"
 #include "irigb.h"
 #include "lcd.h"
-#include "delay.h"
+#include "storevalue.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,11 +55,6 @@ uint32_t Wave_LUT[NS] = {
     234, 283, 336, 394, 456, 521, 591, 664, 740, 820, 902, 987, 1075, 1166, 1258,
     1353, 1449, 1546, 1645, 1745, 1845, 1946, 2047
 };
-/*
-#define NS  10
-uint32_t Wave_LUT[NS] = {
-    4091, 4091, 4091, 4091, 4091, 4091, 4091, 4091,4095,4095 
-};*/
 
 /* USER CODE END PM */
 
@@ -72,15 +68,22 @@ SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim20;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+uint8_t u1Timeout=0;
+uint32_t tim20ct=0;
+/* Size of Reception buffer */
+#define RXBUFFERSIZE                      10
+/* Buffer used for reception */
+uint8_t aRxBuffer[RXBUFFERSIZE];
 
-
-wiz_NetInfo gWIZNETINFO = { .mac = {0x00, 0x08, 0xDC,0x4F, 0xEB, 0x6E},
+wiz_NetInfo gWIZNETINFO = { .mac = {0x01, 0x08, 0xDC,0x4F, 0xEB, 0x6E},
                             .ip = {192, 168, 22, 163},
                             .sn = {255,255,255,1},
                             .gw = {192, 168, 22, 252},
@@ -100,6 +103,8 @@ static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_I2C3_Init(void);
+static void MX_TIM20_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 static void  wizchip_select(void)
 {
@@ -274,6 +279,14 @@ void ghids(unsigned char add, unsigned char dat)
 	i2c_write[0] = BCD_Encoder(dat);
 	HAL_I2C_Mem_Write(&hi2c3,0x68<<1,add,I2C_MEMADD_SIZE_8BIT,i2c_write,1,1000); 
 }
+
+
+
+
+static uint32_t GetPage(uint32_t Address);
+static uint32_t GetBank(uint32_t Address);
+static void storeValue(void);
+static void loadValue(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -319,6 +332,8 @@ uint8_t u2data[100];
   MX_USART3_UART_Init();
   MX_TIM2_Init();
   MX_I2C3_Init();
+  MX_TIM20_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 	/*
 	laythoigian();
@@ -341,18 +356,23 @@ uint8_t u2data[100];
 	HAL_GPIO_WritePin(RD485_GPIO_Port, RD485_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
 	//115200 7b 1s n
-	printf("This code gen by STMcube STM32G473RBT 72MHz\r\n");
+	printf("This code gen by STMcube STM32G473RBT 80MHz\r\n");
 	//HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 100);
 	HAL_UART_Transmit(&huart2, (uint8_t *)"UART2 TX ok\r\n", 13, 100);
 	
-	w5500_lib_init();
+	//w5500_lib_init();
 	HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)_Bit0, 1280, DAC_ALIGN_12B_R);
 	//hdma_dac1_ch1.Instance->CMAR = (uint32_t)_Bit0;
   HAL_TIM_Base_Start(&htim2);
+	HAL_TIM_Base_Start_IT(&htim3);
+	
 	//HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 	//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R,4000);
 	printf("Run\r\n");
+	
+	storeValue();
+	loadValue();
 	
 	
 			
@@ -362,25 +382,69 @@ uint8_t u2data[100];
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+	  /*##-2- Put UART peripheral in reception process ###########################*/
+  /* Any data received will be stored in "aRxBuffer" buffer : the number max of
+     data received is 10 
+		 Du lieu nhan dc se tu dong luu vao aRxBuffer
+		 */
+  if (HAL_UART_Receive_IT(&huart1, (uint8_t *)aRxBuffer, RXBUFFERSIZE) != HAL_OK)
+  {
+    /* Transfer error in reception process */
+    Error_Handler();
+  }
+	
+	//htim20.Instance->CNT =0;
   while (1)
   {
     //HAL_IWDG_Refresh(&hiwdg);
 		//HAL_UART_Receive(&huart2, u2data,20,100);
 		//printf("u2data:%s\r\n",u2data);
 		//HAL_Delay(100);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 0);
+		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 0);
 		//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R,4000);
-    HAL_Delay(500);
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 1);
+    //HAL_Delay(500);
+    //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 1);
 		//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R,400);
-    HAL_Delay(450);
-		laythoigian();
+    //HAL_Delay(450);
 		
-		//printf("Time :%d %d %d %d %d %d %d, %d,%d\r\n",time[0],time[1],time[2],time[3],time[4],time[5],time[6],nhietdo,nhietdole);
-		LCD_Gotoxy(0,0);
-		if(time[3] == 6) LCD_Puts("Fri ");
-		lcdprintf("%2d/%2d/20%2d %2d:%2d:%2d",time[4],time[5],time[6],time[2],time[1],time[0]);
-		//printf("done:%d\r\n",_loop1);
+		
+		
+		//tim20ct= __HAL_TIM_GET_COUNTER(&htim3);
+		
+		//printf("tim20ct:%d\r\n",tim20ct);
+		
+		if(tim20ct > 1000) {
+			tim20ct = 0;
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 0);
+			laythoigian();
+			//printf("Time :%d %d %d %d %d %d %d, %d,%d\r\n",time[0],time[1],time[2],time[3],time[4],time[5],time[6],nhietdo,nhietdole);
+			
+			LCD_Gotoxy(0,0);
+			
+			if(time[3] == 6) LCD_Puts("Fri ");
+			else	if(time[3] == 5) LCD_Puts("Thu ");
+			else	if(time[3] == 4) LCD_Puts("Wed ");
+			else	if(time[3] == 3) LCD_Puts("Tue ");
+			else	if(time[3] == 2) LCD_Puts("Mon ");
+			else	if(time[3] == 7) LCD_Puts("Sat ");
+			else	if(time[3] == 1) LCD_Puts("Sun ");
+			else LCD_Puts("??? ");
+			
+			lcdprintf("%2d/%2d/20%2d %2d:%2d:%2d",time[4],time[5],time[6],time[2],time[1],time[0]);
+		
+			//printf("1s\r\n");
+			//HAL_Delay(50);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 1);
+			//HAL_Delay(50);
+		}
+		if(u1Timeout == 1) 
+			{
+				u1Timeout = 0;
+				printf("aRxBuffer %s; \r\n",aRxBuffer);
+				huart1.pRxBuffPtr = (uint8_t *)aRxBuffer;
+				huart1.RxXferCount = RXBUFFERSIZE;
+				memset(aRxBuffer,0,RXBUFFERSIZE);
+			}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -590,29 +654,24 @@ static void MX_TIM1_Init(void)
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
 
   /* USER CODE BEGIN TIM1_Init 1 */
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;
+  htim1.Init.Prescaler = 79;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 65535;
+  htim1.Init.Period = 999;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
   if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -623,36 +682,8 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_ENABLE;
-  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
-  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
-  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
-  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 0;
-  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
-  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
-  sBreakDeadTimeConfig.BreakFilter = 0;
   sBreakDeadTimeConfig.BreakAFMode = TIM_BREAK_AFMODE_INPUT;
-  sBreakDeadTimeConfig.Break2State = TIM_BREAK2_DISABLE;
-  sBreakDeadTimeConfig.Break2Polarity = TIM_BREAK2POLARITY_HIGH;
-  sBreakDeadTimeConfig.Break2Filter = 0;
   sBreakDeadTimeConfig.Break2AFMode = TIM_BREAK_AFMODE_INPUT;
-  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
   if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
   {
     Error_Handler();
@@ -660,7 +691,6 @@ static void MX_TIM1_Init(void)
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
-  HAL_TIM_MspPostInit(&htim1);
 
 }
 
@@ -706,6 +736,105 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 80-1;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 999;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
+  * @brief TIM20 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM20_Init(void)
+{
+
+  /* USER CODE BEGIN TIM20_Init 0 */
+
+  /* USER CODE END TIM20_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
+
+  /* USER CODE BEGIN TIM20_Init 1 */
+
+  /* USER CODE END TIM20_Init 1 */
+  htim20.Instance = TIM20;
+  htim20.Init.Prescaler = 79;
+  htim20.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim20.Init.Period = 999;
+  htim20.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim20.Init.RepetitionCounter = 0;
+  htim20.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim20) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim20, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim20, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sBreakDeadTimeConfig.BreakAFMode = TIM_BREAK_AFMODE_INPUT;
+  sBreakDeadTimeConfig.Break2AFMode = TIM_BREAK_AFMODE_INPUT;
+  if (HAL_TIMEx_ConfigBreakDeadTime(&htim20, &sBreakDeadTimeConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM20_Init 2 */
+
+  /* USER CODE END TIM20_Init 2 */
 
 }
 
@@ -960,6 +1089,24 @@ PUTCHAR_PROTOTYPE
 	//_loop1 = _loop1_run;
 	return ch;
 }
+
+/**
+  * @brief  Rx Transfer completed callback
+  * @param  UartHandle: UART handle
+  * @note   This example shows a simple way to report end of IT Rx transfer, and
+  *         you can add your own implementation.
+  * @retval None
+  */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
+{
+  if (UartHandle->Instance == USART1) 
+		{
+			
+		}
+		//printf("aRxBuffer %s; \r\n",aRxBuffer);
+		//HAL_Delay(1000);
+}
+
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac)
 {
 	
@@ -977,6 +1124,190 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac)
 		}
 };
 //void HAL_DMA_RegisterCallback
+static void loadValue(void)
+{
+	__IO uint32_t MemoryProgramStatus = 0;
+	__IO uint32_t data32 = 0;
+	uint32_t Address = 0;
+	/* Check if the programmed data is OK
+      MemoryProgramStatus = 0: data programmed correctly
+      MemoryProgramStatus != 0: number of words not programmed correctly ******/
+
+  MemoryProgramStatus = 0x0;
+
+  
+    data32 = *(__IO uint32_t *)FLASH_USER_START_ADDR;
+    
+    if (data32 != DATA_32)
+    {
+      MemoryProgramStatus++;
+    }
+    
+	
+	/*Check if there is an issue to program data*/
+  if (MemoryProgramStatus == 0)
+  {
+    /* No error detected. Switch on LED1*/
+    //BSP_LED_On(LED1);
+		printf("Memory is ok\r\n");
+  }
+  else
+  {
+    /* Error detected. Switch on LED3*/
+    //BSP_LED_On(LED3);
+		printf("Error detected \r\n");
+		return;
+  }
+	
+	data32 = *(__IO uint32_t *)(FLASH_USER_START_ADDR+4);
+	//printf("first data32 %x\r\n",data32);
+	
+	gWIZNETINFO.ip[3] = (uint8_t)data32;
+	gWIZNETINFO.ip[2] = (uint8_t)(data32>>8);
+	gWIZNETINFO.ip[1] = (uint8_t)(data32>>16);
+	gWIZNETINFO.ip[0] = (uint8_t)(data32>>24);	
+	printf("Load IP: %d.%d.%d.%d\r\n",gWIZNETINFO.ip[0],gWIZNETINFO.ip[1],gWIZNETINFO.ip[2],gWIZNETINFO.ip[3]);
+		
+	data32 = *(__IO uint32_t *)(FLASH_USER_START_ADDR+8);
+	printf("last data32 %x\r\n",data32);
+		data32 = *(__IO uint32_t *)(FLASH_USER_START_ADDR+12);
+	printf("first data32 %x\r\n",data32);
+	data32 = *(__IO uint32_t *)(FLASH_USER_START_ADDR+16);
+	printf("last data32 %x\r\n",data32);
+		data32 = *(__IO uint32_t *)(FLASH_USER_START_ADDR+20);
+	printf("first data32 %x\r\n",data32);
+}
+static void storeValue(void)
+{
+	uint32_t FirstPage = 0, NbOfPages = 0, BankNumber = 0,PageError = 0;
+	static FLASH_EraseInitTypeDef EraseInitStruct;
+	uint64_t temp;
+	/* Unlock the Flash to enable the flash control register access *************/
+  HAL_FLASH_Unlock();
+	/* Clear OPTVERR bit set on virgin samples */
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPTVERR);
+	/* Erase the user Flash area
+    (area defined by FLASH_USER_START_ADDR and FLASH_USER_END_ADDR) ***********/
+  
+  /* Get the 1st page to erase */
+  FirstPage = GetPage(FLASH_USER_START_ADDR);
+
+  /* Get the number of pages to erase from 1st page */
+  NbOfPages = GetPage(FLASH_USER_END_ADDR) - FirstPage + 1;
+
+  /* Get the bank */
+  BankNumber = GetBank(FLASH_USER_START_ADDR);
+  
+  /* Fill EraseInit structure*/
+  EraseInitStruct.TypeErase   = FLASH_TYPEERASE_PAGES;
+  EraseInitStruct.Banks       = BankNumber;
+  EraseInitStruct.Page        = FirstPage;
+  EraseInitStruct.NbPages     = NbOfPages;
+	
+	
+	if (HAL_FLASHEx_Erase(&EraseInitStruct, &PageError) != HAL_OK)
+  {
+    /*
+      Error occurred while page erase.
+      User can add here some code to deal with this error.
+      PageError will contain the faulty page and then to know the code error on this page,
+      user can call function 'HAL_FLASH_GetError()'
+    */
+		printf("Error occurred while page erase.\r\n");
+    
+  }
+	
+	/* Program the user Flash area word by word
+    (area defined by FLASH_USER_START_ADDR and FLASH_USER_END_ADDR) ***********/
+	
+	//temp = DATA_32;
+	//temp = temp<<32;
+	temp  = 0;
+	temp |= (gWIZNETINFO.ip[0] <<24) |(gWIZNETINFO.ip[1] <<16)|(gWIZNETINFO.ip[2] <<8)|gWIZNETINFO.ip[3];
+  printf("temp : %x\r\n",(gWIZNETINFO.ip[0] <<24) +(gWIZNETINFO.ip[1] <<16)+(gWIZNETINFO.ip[2] <<8)+gWIZNETINFO.ip[3]);
+	temp = DATA_32 | (temp<<32);
+    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, FLASH_USER_START_ADDR, temp) == HAL_OK)
+    {
+			printf("Saved!\r\n");
+    }
+   else
+    {
+      /* Error occurred while writing data in Flash memory.
+         User can add here some code to deal with this error */
+			printf("Error occurred while writing data in Flash memory\r\n");
+      
+    }
+		
+		temp  = 0xFFFFFF01C0A816FC;//sn|fw
+		//temp |= (gWIZNETINFO.ip[0] <<24) |(gWIZNETINFO.ip[1] <<16)|(gWIZNETINFO.ip[2] <<8)|gWIZNETINFO.ip[3];
+		//printf("temp : %x\r\n",(gWIZNETINFO.ip[0] <<24) +(gWIZNETINFO.ip[1] <<16)+(gWIZNETINFO.ip[2] <<8)+gWIZNETINFO.ip[3]);
+		
+		if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (FLASH_USER_START_ADDR+8), temp) == HAL_OK)
+    {
+			printf("Saved!\r\n");
+    }
+   else
+    {
+      /* Error occurred while writing data in Flash memory.
+         User can add here some code to deal with this error */
+			printf("Error occurred while writing data in Flash memory\r\n");
+      
+    }
+		
+		temp  = 0x0808080801020304;//sn|fw
+		//temp |= (gWIZNETINFO.ip[0] <<24) |(gWIZNETINFO.ip[1] <<16)|(gWIZNETINFO.ip[2] <<8)|gWIZNETINFO.ip[3];
+		//printf("temp : %x\r\n",(gWIZNETINFO.ip[0] <<24) +(gWIZNETINFO.ip[1] <<16)+(gWIZNETINFO.ip[2] <<8)+gWIZNETINFO.ip[3]);
+		
+		if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (FLASH_USER_START_ADDR+16), temp) == HAL_OK)
+    {
+			printf("Saved!\r\n");
+    }
+   else
+    {
+      /* Error occurred while writing data in Flash memory.
+         User can add here some code to deal with this error */
+			printf("Error occurred while writing data in Flash memory\r\n");
+      
+    }
+  
+	
+	/* Lock the Flash to disable the flash control register access (recommended
+     to protect the FLASH memory against possible unwanted operation) *********/
+  HAL_FLASH_Lock();
+}
+
+/**
+  * @brief  Gets the page of a given address
+  * @param  Addr: Address of the FLASH Memory
+  * @retval The page of a given address
+  */
+static uint32_t GetPage(uint32_t Addr)
+{
+  uint32_t page = 0;
+
+  if (Addr < (FLASH_BASE + FLASH_BANK_SIZE))
+  {
+    /* Bank 1 */
+    page = (Addr - FLASH_BASE) / FLASH_PAGE_SIZE;
+  }
+  else
+  {
+    /* Bank 2 */
+    page = (Addr - (FLASH_BASE + FLASH_BANK_SIZE)) / FLASH_PAGE_SIZE;
+  }
+
+  return page;
+}
+
+/**
+  * @brief  Gets the bank of a given address
+  * @param  Addr: Address of the FLASH Memory
+  * @retval The bank of a given address
+  */
+static uint32_t GetBank(uint32_t Addr)
+{
+  return FLASH_BANK_1;
+}
 /* USER CODE END 4 */
 
 /**

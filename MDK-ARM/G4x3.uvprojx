@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32G473xx,USE_HAL_DRIVER,STM32G473xx</Define>
               <Undefine></Undefine>
-              <IncludePath>../Inc; ../Drivers/STM32G4xx_HAL_Driver/Inc; ../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy; ../Drivers/CMSIS/Device/ST/STM32G4xx/Include; ../Drivers/CMSIS/Include; ..\Src\user\ethernet; ..\Src\user\ethernet\W5500; ..\Src\user\lcd40x2; ..\Src\user\delay</IncludePath>
+              <IncludePath>../Inc;                  ../Drivers/STM32G4xx_HAL_Driver/Inc;                  ../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy;                  ../Drivers/CMSIS/Device/ST/STM32G4xx/Include;                  ../Drivers/CMSIS/Include;                  ..\Src\user\ethernet;                  ..\Src\user\ethernet\W5500;                  ..\Src\user\lcd40x2;                  ..\Src\user\delay</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -427,11 +427,6 @@
               <FileName>stm32g4xx_hal_msp.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Src/stm32g4xx_hal_msp.c</FilePath>
-            </File>
-            <File>
-              <FileName>ds3231.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user\ds3231\ds3231.c</FilePath>
             </File>
           </Files>
         </Group>

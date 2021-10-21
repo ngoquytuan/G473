@@ -50,8 +50,6 @@ extern "C" {
 
 /* USER CODE END EM */
 
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -89,6 +87,8 @@ void Error_Handler(void);
 #define LCD_D7_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 #define WZN_ERR -1
+
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
