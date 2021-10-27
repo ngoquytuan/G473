@@ -1,0 +1,86 @@
+T05B0 000:174.710   SEGGER J-Link V6.86 Log File
+T05B0 000:175.218   DLL Compiled: Sep 24 2020 17:31:31
+T05B0 000:175.230   Logging started @ 2021-10-13 07:37
+T05B0 000:175.241 - 175.245ms
+T05B0 000:175.287 JLINK_SetWarnOutHandler(...)
+T05B0 000:175.298 - 0.014ms
+T05B0 000:175.308 JLINK_OpenEx(...)
+T05B0 000:179.368   Firmware: J-Link OB-STM32F072-CortexM compiled Jan  7 2019 14:09:37
+T05B0 000:179.710   Decompressing FW timestamp took 172 us
+T05B0 000:187.456   Hardware: V1.00
+T05B0 000:187.500   S/N: 4294967295
+T05B0 000:187.513   OEM: SEGGER
+T05B0 000:187.523   Feature(s): GDB, RDI, FlashBP, FlashDL, JFlash, RDDI
+T05B0 000:190.171   TELNET listener socket opened on port 19021
+T05B0 000:190.333   WEBSRV Starting webserver
+T05B0 000:190.532   WEBSRV Webserver running on local port 19080
+T05B0 000:190.549 - 15.243ms returns "O.K."
+T05B0 000:190.567 JLINK_GetEmuCaps()
+T05B0 000:190.576 - 0.011ms returns 0xB8EA5A33
+T05B0 000:190.588 JLINK_TIF_GetAvailable(...)
+T05B0 000:191.045 - 0.465ms
+T05B0 000:191.064 JLINK_SetErrorOutHandler(...)
+T05B0 000:191.072 - 0.011ms
+T05B0 000:191.094 JLINK_ExecCommand("ProjectFile = "C:\Users\ngoqu\Documents\GitHub\G473\MDK-ARM\JLinkSettings.ini"", ...). 
+T05B0 000:204.297   Ref file found at: C:\Keil_v5\ARM\Segger\JLinkDevices.ref
+T05B0 000:204.408   XML referenced by ref file: C:\Program Files (x86)\SEGGER\JLink\JLinkDevices.xml
+T05B0 000:205.079   C:\Program Files (x86)\SEGGER\JLink\JLinkDevices.xml evaluated successfully.
+T05B0 000:248.061 - 56.979ms returns 0x00
+T05B0 000:248.092 JLINK_ExecCommand("Device = STM32G473RBTx", ...). 
+T05B0 000:248.336   Looking for J-Link GUI Server exe at: C:\Keil_v5\ARM\Segger\JLinkGUIServer.exe
+T05B0 000:248.519   Looking for J-Link GUI Server exe at: C:\Program Files (x86)\SEGGER\JLink\JLinkGUIServer.exe
+T05B0 000:248.560   Forking J-Link GUI Server: C:\Program Files (x86)\SEGGER\JLink\JLinkGUIServer.exe
+T05B0 000:304.779   J-Link GUI Server info: "J-Link GUI server V6.92 "
+T05B0 003:007.431 - 2759.353ms returns 0xFFFFFFFF
+T05B0 003:008.329 JLINK_GetHardwareVersion()
+T05B0 003:008.342 - 0.016ms returns 10000
+T05B0 003:008.356 JLINK_GetDLLVersion()
+T05B0 003:008.363 - 0.010ms returns 68600
+T05B0 003:008.372 JLINK_GetOEMString(...)
+T05B0 003:008.380 JLINK_GetFirmwareString(...)
+T05B0 003:008.387 - 0.010ms
+T05B0 003:008.398 JLINK_GetDLLVersion()
+T05B0 003:008.405 - 0.009ms returns 68600
+T05B0 003:008.413 JLINK_GetCompileDateTime()
+T05B0 003:008.420 - 0.009ms
+T05B0 003:008.430 JLINK_GetFirmwareString(...)
+T05B0 003:008.437 - 0.010ms
+T05B0 003:008.446 JLINK_GetHardwareVersion()
+T05B0 003:008.453 - 0.009ms returns 10000
+T05B0 003:008.462 JLINK_GetSN()
+T05B0 003:008.470 - 0.011ms returns -1
+T05B0 003:008.478 JLINK_GetOEMString(...)
+T05B0 004:285.505 JLINK_TIF_Select(JLINKARM_TIF_JTAG)
+T05B0 004:285.912   
+  ***** Error: 
+T05B0 004:285.931   Debugger tries to select target interface JTAG.
+This interface is not supported by the connected emulator.
+Selection will be ignored by the DLL.
+T05B0 004:285.942 - 0.441ms returns 0x01
+T05B0 004:285.960 JLINK_HasError()
+T05B0 004:285.976 JLINK_SetSpeed(5000)
+T05B0 004:285.986 - 0.014ms
+T05B0 004:286.236 JLINK_HasError()
+T05B0 004:286.249 JLINK_SetResetType(JLINKARM_RESET_TYPE_NORMAL)
+T05B0 004:286.257 - 0.011ms returns JLINKARM_RESET_TYPE_NORMAL
+T05B0 004:286.266 JLINK_Reset()
+T05B0 004:288.395   
+  ***** Error: 
+T05B0 004:288.410   No CPU core or target device has been selected. Please make sure at least the core J-Link shall connect to, is selected.
+T05B0 004:288.420 - 2.158ms
+T05B0 004:288.434 JLINK_GetId()
+T05B0 004:288.740   
+  ***** Error: 
+T05B0 004:288.754   No CPU core or target device has been selected. Please make sure at least the core J-Link shall connect to, is selected.
+T05B0 004:288.765 - 0.334ms returns 0x00000000
+T05B0 004:288.778 JLINK_GetId()
+T05B0 004:289.148   
+  ***** Error: 
+T05B0 004:289.162   No CPU core or target device has been selected. Please make sure at least the core J-Link shall connect to, is selected.
+T05B0 004:289.173 - 0.398ms returns 0x00000000
+T05B0 004:292.834 JLINK_GetFirmwareString(...)
+T05B0 004:292.858 - 0.028ms
+T05B0 004:988.794 JLINK_Close()
+T05B0 004:997.573 - 8.797ms
+T05B0 004:997.596   
+T05B0 004:997.603   Closed
