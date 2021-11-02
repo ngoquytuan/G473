@@ -394,21 +394,6 @@
           <GroupName>Application/User</GroupName>
           <Files>
             <File>
-              <FileName>wizchip_conf.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user\ethernet\wizchip_conf.c</FilePath>
-            </File>
-            <File>
-              <FileName>socket.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user\ethernet\socket.c</FilePath>
-            </File>
-            <File>
-              <FileName>w5500.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Src\user\ethernet\W5500\w5500.c</FilePath>
-            </File>
-            <File>
               <FileName>lcd.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\user\lcd40x2\lcd.c</FilePath>

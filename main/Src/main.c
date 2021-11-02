@@ -23,8 +23,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
-#include "wizchip_conf.h"
-#include "irigb.h"
 #include "lcd.h"
 #include "storevalue.h"
 #include <string.h>
@@ -42,19 +40,6 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-uint32_t	_loop1=0;
-#define NS  128
-uint32_t Wave_LUT[NS] = {
-    2048, 2149, 2250, 2350, 2450, 2549, 2646, 2742, 2837, 2929, 3020, 3108, 3193, 3275, 3355,
-    3431, 3504, 3574, 3639, 3701, 3759, 3812, 3861, 3906, 3946, 3982, 4013, 4039, 4060, 4076,
-    4087, 4094, 4095, 4091, 4082, 4069, 4050, 4026, 3998, 3965, 3927, 3884, 3837, 3786, 3730,
-    3671, 3607, 3539, 3468, 3394, 3316, 3235, 3151, 3064, 2975, 2883, 2790, 2695, 2598, 2500,
-    2400, 2300, 2199, 2098, 1997, 1896, 1795, 1695, 1595, 1497, 1400, 1305, 1212, 1120, 1031,
-    944, 860, 779, 701, 627, 556, 488, 424, 365, 309, 258, 211, 168, 130, 97,
-    69, 45, 26, 13, 4, 0, 1, 8, 19, 35, 56, 82, 113, 149, 189,
-    234, 283, 336, 394, 456, 521, 591, 664, 740, 820, 902, 987, 1075, 1166, 1258,
-    1353, 1449, 1546, 1645, 1745, 1845, 1946, 2047
-};
 
 /* USER CODE END PM */
 
@@ -83,12 +68,7 @@ uint32_t tim20ct=0;
 /* Buffer used for reception */
 uint8_t aRxBuffer[RXBUFFERSIZE];
 
-wiz_NetInfo gWIZNETINFO = { .mac = {0x01, 0x08, 0xDC,0x4F, 0xEB, 0x6E},
-                            .ip = {192, 168, 22, 163},
-                            .sn = {255,255,255,1},
-                            .gw = {192, 168, 22, 252},
-                            .dns = {8,8,8,8},
-                            .dhcp = NETINFO_STATIC };
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -106,148 +86,7 @@ static void MX_I2C3_Init(void);
 static void MX_TIM20_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
-static void  wizchip_select(void)
-{
-	//GPIO_ResetBits(W5500_CS_GPIO_PORT, W5500_CS_PIN);
-	HAL_GPIO_WritePin(SCSn_GPIO_Port, SCSn_Pin, GPIO_PIN_RESET);
-}
-static void  wizchip_deselect(void)
-{
-	//GPIO_SetBits(W5500_CS_GPIO_PORT, W5500_CS_PIN);
-	uint8_t temp=0xff;
-	HAL_GPIO_WritePin(SCSn_GPIO_Port, SCSn_Pin, GPIO_PIN_SET);
-	HAL_SPI_Transmit(&hspi1,&temp,1,100);
-	//stm32_spi_rw(0xFF);
-}
-static uint8_t wizchip_read(void)
-{
-	uint8_t temp;
-	//while (  SPI_I2S_GetFlagStatus(SPI2 , SPI_I2S_FLAG_TXE) == RESET );
-	//SPI_I2S_SendData(SPI2 , 0xff);     // Dummy write to generate clock
-	//while (  SPI_I2S_GetFlagStatus(SPI2 , SPI_I2S_FLAG_RXNE) == RESET );
-	//return (unsigned char)SPI_I2S_ReceiveData(SPI2);
-	 
-	HAL_SPI_Receive(&hspi1,&temp,1,100);
-	return temp;
-}
-static void  wizchip_write(uint8_t wb)
-{
-	//while (  SPI_I2S_GetFlagStatus(SPI2 , SPI_I2S_FLAG_TXE) == RESET );  // sending data Wait
-	//SPI_I2S_SendData(SPI2 , wb);
-	//while (  SPI_I2S_GetFlagStatus(SPI2 , SPI_I2S_FLAG_RXNE) == RESET ); // Wait for data
-	//wb = SPI_I2S_ReceiveData(SPI2);        // Dummy read to generate clock
-	HAL_SPI_Transmit(&hspi1,&wb,1,100);
-}
-static void wizchip_readburst(uint8_t* pBuf, uint16_t len)
-{
-	//stm32_wizchip_dma_transfer(1, pBuf, len);  //FALSE(0) for buff->SPI, TRUE(1) for SPI->buff
-	HAL_SPI_Receive(&hspi1,pBuf,len,100);
-}
 
-static void  wizchip_writeburst(uint8_t* pBuf, uint16_t len)
-{
-	//stm32_wizchip_dma_transfer(0, pBuf, len);  //FALSE(0) for buff->SPI, TRUE(1) for SPI->buff
-	HAL_SPI_Transmit(&hspi1,pBuf,len,100);
-}
-
-void Display_Net_Conf()
-{
-	uint8_t tmpstr[6] = {0,};
-	wiz_NetInfo gWIZNETINFO;
-
-	ctlnetwork(CN_GET_NETINFO, (void*) &gWIZNETINFO);
-	ctlwizchip(CW_GET_ID,(void*)tmpstr);
-
-	// Display Network Information
-	if(gWIZNETINFO.dhcp == NETINFO_DHCP) printf("\r\n===== %s NET CONF : DHCP =====\r\n",(char*)tmpstr);
-		else printf("\r\n===== %s NET CONF : Static =====\r\n",(char*)tmpstr);
-
-	printf("\r\nMAC: %02X:%02X:%02X:%02X:%02X:%02X\r\n", gWIZNETINFO.mac[0], gWIZNETINFO.mac[1], gWIZNETINFO.mac[2], gWIZNETINFO.mac[3], gWIZNETINFO.mac[4], gWIZNETINFO.mac[5]);
-	printf("IP: %d.%d.%d.%d\r\n", gWIZNETINFO.ip[0], gWIZNETINFO.ip[1], gWIZNETINFO.ip[2], gWIZNETINFO.ip[3]);
-	printf("GW: %d.%d.%d.%d\r\n", gWIZNETINFO.gw[0], gWIZNETINFO.gw[1], gWIZNETINFO.gw[2], gWIZNETINFO.gw[3]);
-	printf("SN: %d.%d.%d.%d\r\n", gWIZNETINFO.sn[0], gWIZNETINFO.sn[1], gWIZNETINFO.sn[2], gWIZNETINFO.sn[3]);
-	printf("DNS: %d.%d.%d.%d\r\n", gWIZNETINFO.dns[0], gWIZNETINFO.dns[1], gWIZNETINFO.dns[2], gWIZNETINFO.dns[3]);
-	
-	//printf("\r\n=== DNS Client Example ===============\r\n");
-  //printf("> DNS 1st : %d.%d.%d.%d\r\n", gWIZNETINFO.dns[0], gWIZNETINFO.dns[1], gWIZNETINFO.dns[2], gWIZNETINFO.dns[3]);
-  //printf("> DNS 2nd : %d.%d.%d.%d\r\n", DNS_2nd[0], DNS_2nd[1], DNS_2nd[2], DNS_2nd[3]);
-  //printf("======================================\r\n");
-   //printf("> Example Domain Name : %s\r\n", Domain_name);
-}
-
-void Net_Conf(wiz_NetInfo netinfo)
-{
-	/*
-	wiz_NetInfo gWIZNETINFO = {
-		{ 0x00, 0x08, 0xDC, 0x44, 0x55, 0x66 },				// Mac address
-		{ 192, 168, 1, 91 },								// IP address
-		{ 255, 255, 255, 0},								// Subnet mask
-		{ 192, 168, 1, 1},									// Gateway
-		{ 8, 8, 8, 8},										// DNS Server
-	};
-	*/
-	ctlnetwork(CN_SET_NETINFO, (void*) &netinfo);
-
-	Display_Net_Conf();
-}
-void w5500_lib_init(void){
-		
-		uint8_t tmp;
-		intr_kind temp;
-		uint8_t memsize[2][8] = {{2,2,2,2,2,2,2,2},{2,2,2,2,2,2,2,2}};	
-		
-		//printf("w5500_lib_init...1");
-		//GPIO_ResetBits(W5500_RST_GPIO, W5500_RST);
-		HAL_GPIO_WritePin(RSTn_GPIO_Port, RSTn_Pin, GPIO_PIN_RESET);
-		HAL_Delay(100);
-		
-		//////////
-   // TODO //
-   ////////////////////////////////////////////////////////////////////////////////////////////////////
-   // First of all, Should register SPI callback functions implemented by user for accessing WIZCHIP //
-   ////////////////////////////////////////////////////////////////////////////////////////////////////
-   
-		/* Critical section callback - No use in this example */
-		//reg_wizchip_cris_cbfunc(0, 0);
-			
-    /* Chip selection call back */
-		reg_wizchip_cs_cbfunc(wizchip_select, wizchip_deselect);
-		/* SPI Read & Write callback function */
-    reg_wizchip_spi_cbfunc(wizchip_read, wizchip_write);
-		reg_wizchip_spiburst_cbfunc(wizchip_readburst, wizchip_writeburst);
-		//GPIO_SetBits(W5500_RST_GPIO, W5500_RST);//RST High to run
-		HAL_GPIO_WritePin(RSTn_GPIO_Port, RSTn_Pin, GPIO_PIN_SET);
-		HAL_Delay(100);
-		//printf("...2");
-    ////////////////////////////////////////////////////////////////////////
-		/* WIZCHIP SOCKET Buffer initialize */
-		//Initializes to WIZCHIP with SOCKET buffer size 2 or 1 dimension array typed uint8_t
-    if(ctlwizchip(CW_INIT_WIZCHIP,(void*)memsize) == -1)
-    {
-       printf("WIZCHIP Initialized fail.\r\n");
-       //while(1);
-    }
-		
-		//printf("...get PHY Link status");
-		/* PHY link status check */
-    
-		do
-    {
-       if(ctlwizchip(CW_GET_PHYLINK, (void*)&tmp) == -1)
-          ;//printf("Unknown PHY Link stauts.\r\n");
-    }while(tmp == PHY_LINK_OFF);
-		//printf("...4");
-		//Cau hinh ngat tren S0
-		temp = IK_SOCK_0;
-		if(ctlwizchip(CW_SET_INTRMASK, &temp) == WZN_ERR)
-		{
-			printf("Cannot set imr...\r\n");
-		}
-		//printf("...all ok\r\n");
-		Net_Conf(gWIZNETINFO);
-		
-
-}
 
 //----------------------Phan giao tiep i2c-thoi gian thuc ---------------------//
 unsigned char i2c_write[1];
@@ -360,15 +199,11 @@ uint8_t u2data[100];
 	//HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 100);
 	HAL_UART_Transmit(&huart2, (uint8_t *)"UART2 TX ok\r\n", 13, 100);
 	
-	//w5500_lib_init();
-	HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
-	HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)_Bit0, 1280, DAC_ALIGN_12B_R);
-	//hdma_dac1_ch1.Instance->CMAR = (uint32_t)_Bit0;
+	
   HAL_TIM_Base_Start(&htim2);
 	HAL_TIM_Base_Start_IT(&htim3);
 	
-	//HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
-	//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R,4000);
+	
 	printf("Run\r\n");
 	
 	storeValue();
@@ -440,7 +275,7 @@ uint8_t u2data[100];
 		if(u1Timeout == 1) 
 			{
 				u1Timeout = 0;
-				printf("aRxBuffer %s; \r\n",aRxBuffer);
+				printf("GPS %s; \r\n",aRxBuffer);
 				huart1.pRxBuffPtr = (uint8_t *)aRxBuffer;
 				huart1.RxXferCount = RXBUFFERSIZE;
 				memset(aRxBuffer,0,RXBUFFERSIZE);
@@ -1107,22 +942,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 		//HAL_Delay(1000);
 }
 
-void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac)
-{
-	
-	if(_loop1 == 0) 
-		{
-			_loop1 = 1; 
-			//HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)_Bit0, 1280, DAC_ALIGN_12B_R);
-			hdma_dac1_ch1.Instance->CMAR = (uint32_t)_Bit0;
-		}
-	else 
-		{
-			//HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)_BitREF, 1280, DAC_ALIGN_12B_R);
-			hdma_dac1_ch1.Instance->CMAR = (uint32_t)_BitREF;
-			_loop1 = 0;
-		}
-};
+
 //void HAL_DMA_RegisterCallback
 static void loadValue(void)
 {
@@ -1162,11 +982,11 @@ static void loadValue(void)
 	data32 = *(__IO uint32_t *)(FLASH_USER_START_ADDR+4);
 	//printf("first data32 %x\r\n",data32);
 	
-	gWIZNETINFO.ip[3] = (uint8_t)data32;
-	gWIZNETINFO.ip[2] = (uint8_t)(data32>>8);
-	gWIZNETINFO.ip[1] = (uint8_t)(data32>>16);
-	gWIZNETINFO.ip[0] = (uint8_t)(data32>>24);	
-	printf("Load IP: %d.%d.%d.%d\r\n",gWIZNETINFO.ip[0],gWIZNETINFO.ip[1],gWIZNETINFO.ip[2],gWIZNETINFO.ip[3]);
+	//gWIZNETINFO.ip[3] = (uint8_t)data32;
+	//gWIZNETINFO.ip[2] = (uint8_t)(data32>>8);
+	//gWIZNETINFO.ip[1] = (uint8_t)(data32>>16);
+	//gWIZNETINFO.ip[0] = (uint8_t)(data32>>24);	
+	//printf("Load IP: %d.%d.%d.%d\r\n",gWIZNETINFO.ip[0],gWIZNETINFO.ip[1],gWIZNETINFO.ip[2],gWIZNETINFO.ip[3]);
 		
 	data32 = *(__IO uint32_t *)(FLASH_USER_START_ADDR+8);
 	printf("last data32 %x\r\n",data32);
@@ -1223,8 +1043,8 @@ static void storeValue(void)
 	//temp = DATA_32;
 	//temp = temp<<32;
 	temp  = 0;
-	temp |= (gWIZNETINFO.ip[0] <<24) |(gWIZNETINFO.ip[1] <<16)|(gWIZNETINFO.ip[2] <<8)|gWIZNETINFO.ip[3];
-  printf("temp : %x\r\n",(gWIZNETINFO.ip[0] <<24) +(gWIZNETINFO.ip[1] <<16)+(gWIZNETINFO.ip[2] <<8)+gWIZNETINFO.ip[3]);
+	//temp |= (gWIZNETINFO.ip[0] <<24) |(gWIZNETINFO.ip[1] <<16)|(gWIZNETINFO.ip[2] <<8)|gWIZNETINFO.ip[3];
+  //printf("temp : %x\r\n",(gWIZNETINFO.ip[0] <<24) +(gWIZNETINFO.ip[1] <<16)+(gWIZNETINFO.ip[2] <<8)+gWIZNETINFO.ip[3]);
 	temp = DATA_32 | (temp<<32);
     if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, FLASH_USER_START_ADDR, temp) == HAL_OK)
     {
