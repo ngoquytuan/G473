@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32G473xx,USE_HAL_DRIVER,STM32G473xx</Define>
               <Undefine></Undefine>
-              <IncludePath>../Inc;                  ../Drivers/STM32G4xx_HAL_Driver/Inc;                  ../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy;                  ../Drivers/CMSIS/Device/ST/STM32G4xx/Include;                  ../Drivers/CMSIS/Include;                  ..\Src\user\ethernet;                  ..\Src\user\ethernet\W5500;                  ..\Src\user\lcd40x2;                  ..\Src\user\delay</IncludePath>
+              <IncludePath>../Inc;                   ../Drivers/STM32G4xx_HAL_Driver/Inc;                   ../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy;                   ../Drivers/CMSIS/Device/ST/STM32G4xx/Include;                   ../Drivers/CMSIS/Include;                   ..\Src\user\ethernet;                   ..\Src\user\ethernet\W5500;                   ..\Src\user\lcd40x2;                   ..\Src\user\delay</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>

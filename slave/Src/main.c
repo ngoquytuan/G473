@@ -73,7 +73,6 @@ TIM_HandleTypeDef htim20;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
-UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 uint8_t u1Timeout=0;
@@ -100,7 +99,6 @@ static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_USART3_UART_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_TIM20_Init(void);
@@ -287,6 +285,70 @@ static uint32_t GetPage(uint32_t Address);
 static uint32_t GetBank(uint32_t Address);
 static void storeValue(void);
 static void loadValue(void);
+
+void MAX7219_SendByte (unsigned char dat)
+{
+unsigned char i;
+for (i=0;i<8;i++)
+{
+if((dat&0x80)==0x80) HAL_GPIO_WritePin(LED_DIN_GPIO_Port, LED_DIN_Pin, GPIO_PIN_SET);//GPIO_SetBits(GPIOA, MAX7219_DIN);
+else HAL_GPIO_WritePin(LED_DIN_GPIO_Port, LED_DIN_Pin, GPIO_PIN_RESET);//GPIO_ResetBits(GPIOA, MAX7219_DIN);
+
+HAL_GPIO_WritePin(LED_CLK_GPIO_Port, LED_CLK_Pin, GPIO_PIN_RESET);//GPIO_ResetBits(GPIOA, MAX7219_CLK);
+//HAL_Delay(1);
+HAL_GPIO_WritePin(LED_CLK_GPIO_Port, LED_CLK_Pin, GPIO_PIN_SET);//GPIO_SetBits(GPIOA, MAX7219_CLK);
+dat<<=1;
+}
+}
+
+void MAX7219_SendAddrDat (unsigned char addr,unsigned char dat)
+{
+HAL_GPIO_WritePin(LED_LOAD_GPIO_Port, LED_LOAD_Pin, GPIO_PIN_RESET);//GPIO_ResetBits(GPIOA, MAX7219_CS);
+MAX7219_SendByte (addr);
+MAX7219_SendByte (dat);
+HAL_GPIO_WritePin(LED_LOAD_GPIO_Port, LED_LOAD_Pin, GPIO_PIN_SET);//GPIO_SetBits(GPIOA, MAX7219_CS);
+}
+
+void MAX7219_Init (void)
+{
+MAX7219_SendAddrDat (0x0c,0x01); //normal operation
+MAX7219_SendAddrDat (0x0a,0x01); //intensity
+MAX7219_SendAddrDat (0x0b,0x07); //all digits on
+MAX7219_SendAddrDat (0x09,0x00); //decoding
+MAX7219_SendAddrDat (0x0f,0x00); //display test off
+}
+void MAX7219_Clear(void)
+{
+unsigned char i;
+	for(i=8;i>0;i--)
+	MAX7219_SendAddrDat(i,0x00);
+}
+unsigned char const LEDcode[]=
+{
+0x7e,0x30,0x6d,0x79,0x33,0x5b,0x5f,0x70,0x7f,0x7b, //0..9
+0x77,0x1f,0x4e,0x3d,0x4f,0x47,0x67,0x3e,0xff //a..f,P,U,all_on
+};
+void MAX7219_DisplayInt (long int val)
+{
+long int a;
+a=val;
+	MAX7219_SendAddrDat(0x08,LEDcode[1]);
+//MAX7219_SendAddrDat(0x08,LEDcode[(a/10000000)]);
+a=a%10000000;
+	MAX7219_SendAddrDat(0x07,0x03);
+a=a%1000000;
+MAX7219_SendAddrDat(0x06,LEDcode[9]);
+a=a%100000;
+MAX7219_SendAddrDat(0x05,LEDcode[8]);
+a=a%10000;
+MAX7219_SendAddrDat(0x04,LEDcode[(a/1000)]);
+a=a%1000;
+MAX7219_SendAddrDat(0x03,LEDcode[(a/100)]);
+a=a%100;
+MAX7219_SendAddrDat(0x02,LEDcode[(a/10)]);
+a=a%10;
+MAX7219_SendAddrDat(0x01,LEDcode[a]);
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -302,7 +364,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 uint8_t u2data[100];
-
+int a=0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -329,7 +391,6 @@ uint8_t u2data[100];
   MX_TIM1_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
-  MX_USART3_UART_Init();
   MX_TIM2_Init();
   MX_I2C3_Init();
   MX_TIM20_Init();
@@ -370,9 +431,20 @@ uint8_t u2data[100];
 	//HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 	//HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1,DAC_ALIGN_12B_R,4000);
 	printf("Run\r\n");
+	MAX7219_Init();
+	//MAX7219_DisplayInt(1234567);
 	
-	storeValue();
-	loadValue();
+	MAX7219_SendAddrDat(0x01,LEDcode[0]);
+	MAX7219_SendAddrDat(0x02,LEDcode[1]);
+	MAX7219_SendAddrDat(0x03,LEDcode[2]);
+	MAX7219_SendAddrDat(0x04,LEDcode[3]);
+	MAX7219_SendAddrDat(0x05,LEDcode[4]);
+	MAX7219_SendAddrDat(0x06,0x06);
+	MAX7219_SendAddrDat(0x07,0x05);
+	MAX7219_SendAddrDat(0x08,0x00);
+	
+	//storeValue();
+	//loadValue();
 	
 	
 			
@@ -434,6 +506,9 @@ uint8_t u2data[100];
 		
 			//printf("1s\r\n");
 			//HAL_Delay(50);
+			
+			MAX7219_SendAddrDat(0x06,a++);
+			MAX7219_SendAddrDat(0x07,a++);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 1);
 			//HAL_Delay(50);
 		}
@@ -498,10 +573,9 @@ void SystemClock_Config(void)
   /** Initializes the peripherals clocks
   */
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_USART2
-                              |RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_I2C3;
+                              |RCC_PERIPHCLK_I2C3;
   PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-  PeriphClkInit.Usart3ClockSelection = RCC_USART3CLKSOURCE_PCLK1;
   PeriphClkInit.I2c3ClockSelection = RCC_I2C3CLKSOURCE_PCLK1;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
@@ -935,54 +1009,6 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
-  * @brief USART3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART3_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART3_Init 0 */
-
-  /* USER CODE END USART3_Init 0 */
-
-  /* USER CODE BEGIN USART3_Init 1 */
-
-  /* USER CODE END USART3_Init 1 */
-  huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
-  huart3.Init.WordLength = UART_WORDLENGTH_7B;
-  huart3.Init.StopBits = UART_STOPBITS_1;
-  huart3.Init.Parity = UART_PARITY_NONE;
-  huart3.Init.Mode = UART_MODE_TX_RX;
-  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart3.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetTxFifoThreshold(&huart3, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetRxFifoThreshold(&huart3, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_DisableFifoMode(&huart3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART3_Init 2 */
-
-  /* USER CODE END USART3_Init 2 */
-
-}
-
-/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -1018,8 +1044,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, LED_Pin|RD485_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, SCSn_Pin|RSTn_Pin|LCD_D4_Pin|LCD_D5_Pin
-                          |LCD_D6_Pin|LCD_D7_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, SCSn_Pin|RSTn_Pin|LED_DIN_Pin|LED_CLK_Pin
+                          |LCD_D4_Pin|LCD_D5_Pin|LCD_D6_Pin|LCD_D7_Pin
+                          |LED_LOAD_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, LCD_RS_Pin|LCD_EN_Pin|LCD_RW_Pin, GPIO_PIN_RESET);
@@ -1031,10 +1058,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SCSn_Pin RSTn_Pin LCD_D4_Pin LCD_D5_Pin
-                           LCD_D6_Pin LCD_D7_Pin */
-  GPIO_InitStruct.Pin = SCSn_Pin|RSTn_Pin|LCD_D4_Pin|LCD_D5_Pin
-                          |LCD_D6_Pin|LCD_D7_Pin;
+  /*Configure GPIO pins : SCSn_Pin RSTn_Pin LED_DIN_Pin LED_CLK_Pin
+                           LCD_D4_Pin LCD_D5_Pin LCD_D6_Pin LCD_D7_Pin
+                           LED_LOAD_Pin */
+  GPIO_InitStruct.Pin = SCSn_Pin|RSTn_Pin|LED_DIN_Pin|LED_CLK_Pin
+                          |LCD_D4_Pin|LCD_D5_Pin|LCD_D6_Pin|LCD_D7_Pin
+                          |LED_LOAD_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

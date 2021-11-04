@@ -69,6 +69,10 @@ void Error_Handler(void);
 #define INTn_EXTI_IRQn EXTI1_IRQn
 #define RSTn_Pin GPIO_PIN_2
 #define RSTn_GPIO_Port GPIOB
+#define LED_DIN_Pin GPIO_PIN_10
+#define LED_DIN_GPIO_Port GPIOB
+#define LED_CLK_Pin GPIO_PIN_11
+#define LED_CLK_GPIO_Port GPIOB
 #define FR_Pin GPIO_PIN_12
 #define FR_GPIO_Port GPIOB
 #define LCD_RS_Pin GPIO_PIN_10
@@ -85,6 +89,8 @@ void Error_Handler(void);
 #define LCD_D6_GPIO_Port GPIOB
 #define LCD_D7_Pin GPIO_PIN_6
 #define LCD_D7_GPIO_Port GPIOB
+#define LED_LOAD_Pin GPIO_PIN_9
+#define LED_LOAD_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 #define WZN_ERR -1
 
