@@ -739,14 +739,13 @@ ARM Macro Assembler    Page 12
   457 0000001C                 END
               00000000 
               00000000 
-Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp.sp --apcs=
-interwork --depend=g4x3\startup_stm32g473xx.d -og4x3\startup_stm32g473xx.o -I.\
-RTE\_G4x3 -IC:\Users\ngoqu\AppData\Local\Arm\Packs\ARM\CMSIS\5.7.0\CMSIS\Core\I
-nclude -IC:\Users\ngoqu\AppData\Local\Arm\Packs\Keil\STM32G4xx_DFP\1.2.0\Driver
-s\CMSIS\Device\ST\STM32G4xx\Include --predefine="__MICROLIB SETA 1" --predefine
-="__UVISION_VERSION SETA 533" --predefine="_RTE_ SETA 1" --predefine="STM32G473
-xx SETA 1" --predefine="_RTE_ SETA 1" --list=startup_stm32g473xx.lst startup_st
-m32g473xx.s
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=int
+erwork --depend=g4x3\startup_stm32g473xx.d -og4x3\startup_stm32g473xx.o -I.\RTE
+\_G4x3 -I"D:\Cai phan mem\ARM\CMSIS\5.8.0\CMSIS\Core\Include" -I"D:\Cai phan me
+m\Keil\STM32G4xx_DFP\1.4.0\Drivers\CMSIS\Device\ST\STM32G4xx\Include" --predefi
+ne="__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 527" --predefine="_R
+TE_ SETA 1" --predefine="STM32G473xx SETA 1" --list=startup_stm32g473xx.lst sta
+rtup_stm32g473xx.s
 
 
 

@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include "lcd.h"
+#include "gps.h"
 #include "storevalue.h"
 #include <string.h>
 /* USER CODE END Includes */
@@ -222,12 +223,14 @@ uint8_t u2data[100];
      data received is 10 
 		 Du lieu nhan dc se tu dong luu vao aRxBuffer
 		 */
+		 /*
   if (HAL_UART_Receive_IT(&huart1, (uint8_t *)aRxBuffer, RXBUFFERSIZE) != HAL_OK)
   {
-    /* Transfer error in reception process */
+    //Transfer error in reception process 
     Error_Handler();
-  }
+  }*/
 	
+	GPS_Init();
 	//htim20.Instance->CNT =0;
   while (1)
   {
@@ -938,6 +941,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 		{
 			
 		}
+	if(UartHandle == &huart1) GPS_UART_CallBack();
 		//printf("aRxBuffer %s; \r\n",aRxBuffer);
 		//HAL_Delay(1000);
 }
